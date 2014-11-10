@@ -1,0 +1,19 @@
+1. Get a btsync archive from http://www.getsync.com/download
+2. Put bittorrent_sync_x64.tar.gz together with other files in this repo
+3. Run make version=1.4.99 (or whatever version you have now)
+4. ???
+5. PROFIT!
+
+.rpm is in RPMS/x86_64. Install it as rpm -Uvh btsync-1.4.99-1.x86_64.rpm.
+
+Package creates the following files:
+/etc/btsync_users                         # list of users to run btsync for, one user per line
+/etc/rc.d/init.d/btsync                   # btsync service script
+/usr/local/bin/btsync                     # btsync binary
+/usr/share/doc/btsync-1.4.99              # btsync license and readme coming together in the archive
+/usr/share/doc/btsync-1.4.99/LICENSE.TXT
+/usr/share/doc/btsync-1.4.99/README
+
+Service expects to find .sync folder in user's home directory and config file as ~/.sync/config.json.
+
+Run btsync --dump-sample-config > ~/.sync/config.json to get a (yes!) sample config.

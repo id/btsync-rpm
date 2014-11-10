@@ -31,13 +31,13 @@ start() {
     if [ -f $pidfile ]; then
         if ps -p $(cat $pidfile) >/dev/null; then
             echo "$name for $btsuser is already running"
-            exit 0
+            continue
         fi
     fi
     user_config="$HOMEDIR/.sync/config.json"
     if [ -f $user_config ]; then
       echo "Starting $name for $btsuser"
-      su - $btsuser -c "$daemon --config $config"
+      su - $btsuser -c "$daemon --config $user_config"
     else
       echo "Couldn't start $name for $btsuser (no $user_config found)"
     fi
@@ -53,13 +53,13 @@ stop() {
     pidfile="$HOMEDIR/.sync/sync.pid"
     if [ ! -f $pidfile ]; then
         echo "$name for $btsuser is not running"
-        exit 0
+        continue
     fi
     pid=$(cat $pidfile)
     if [ ! -z "$pid" ]
     then
       echo "Stopping $name for $btsuser"
-      kill $pid
+      kill $pid 2>/dev/null
       rm -f $pidfile
     fi
   done
@@ -74,7 +74,7 @@ status() {
     pidfile="$HOMEDIR/.sync/sync.pid"
     if [ ! -f $pidfile ]; then
         echo "$name for $btsuser is not running"
-        exit 0
+        continue
     fi
     pid=$(cat $pidfile)
     if ps -p $pid >/dev/null; then

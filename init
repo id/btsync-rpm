@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Startup script for BTSync
+#
+# chkconfig: 345 80 30
+# description: Starts the btsync daemon for configured users.
+
+### BEGIN INIT INFO
+# Provides: btsync
+# Required-Start: $local_fs $remote_fs
+# Required-Stop: $local_fs $remote_fs
+# Should-Start: $network
+# Should-Stop: $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Multi-user daemonized version of btsync.
+# Description: Starts the btsync daemon for users listed in /etc/btsync_users (one user per line).
+### END INIT INFO
+
+config=/etc/btsync_users
+daemon=/usr/local/bin/btsync
+name="BTSync"
+
+start() {
+  [ -x $daemon ] || exit 5
+  [ -f $config ] || { echo "$config does not exist"; exit 1; }
+  users=$(cat $config)
+  for btsuser in ${users[@]}; do
+    HOMEDIR=$(getent passwd $btsuser | cut -d: -f6)
+    pidfile="$HOMEDIR/.sync/sync.pid"
+    if [ -f $pidfile ]; then
+        if ps -p $(cat $pidfile) >/dev/null; then
+            echo "$name for $btsuser is already running"
+            exit 0
+        fi
+    fi
+    user_config="$HOMEDIR/.sync/config.json"
+    if [ -f $user_config ]; then
+      echo "Starting $name for $btsuser"
+      su - $btsuser -c "$daemon --config $config"
+    else
+      echo "Couldn't start $name for $btsuser (no $user_config found)"
+    fi
+  done
+}
+
+stop() {
+  [ -x $daemon ] || exit 5
+  [ -f $config ] || { echo "$config does not exist"; exit 1; }
+  users=$(cat $config)
+  for btsuser in ${users[@]}; do
+    HOMEDIR=$(getent passwd $btsuser | cut -d: -f6)
+    pidfile="$HOMEDIR/.sync/sync.pid"
+    if [ ! -f $pidfile ]; then
+        echo "$name for $btsuser is not running"
+        exit 0
+    fi
+    pid=$(cat $pidfile)
+    if [ ! -z "$pid" ]
+    then
+      echo "Stopping $name for $btsuser"
+      kill $pid
+      rm -f $pidfile
+    fi
+  done
+}
+
+status() {
+  [ -x $daemon ] || exit 5
+  [ -f $config ] || { echo "$config does not exist"; exit 1; }
+  users=$(cat $config)
+  for btsuser in $users; do
+    HOMEDIR=$(getent passwd $btsuser | cut -d: -f6)
+    pidfile="$HOMEDIR/.sync/sync.pid"
+    if [ ! -f $pidfile ]; then
+        echo "$name for $btsuser is not running"
+        exit 0
+    fi
+    pid=$(cat $pidfile)
+    if ps -p $pid >/dev/null; then
+      echo "$name for $btsuser: running (pid $pid)"
+    else
+      echo "$name for $btsuser: not running."
+    fi
+  done
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: service btsync start|stop|restart|status"
+        exit 1
+esac
+
+exit $?
